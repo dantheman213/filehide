@@ -38,12 +38,12 @@ func encryptFileAction(key, sourceFilePath, encryptedFilePath string) {
 	// add eof signature
 	sourceFileBytes = append(sourceFileBytes, eofSignature...)
 
-	// pad bytes so they're divisible by 4
-	for len(sourceFileBytes) % 4 != 0 {
+	// pad bytes so they're divisible by 3
+	for len(sourceFileBytes) % 3 != 0 {
 		sourceFileBytes = append(sourceFileBytes, 0x00)
 	}
 	byteCount := len(sourceFileBytes)
-	pixelCount := byteCount / 4
+	pixelCount := byteCount / 3
 	pixelDimension := math.Sqrt(float64(pixelCount))
 
 	// round up if there's a remainder
@@ -66,8 +66,8 @@ func encryptFileAction(key, sourceFilePath, encryptedFilePath string) {
 			}
 
 			//fmt.Printf("Added pixel at %d, %d, bytePos at %d \\ %d \n", x, y, bPos, byteCount)
-			img.Set(x, y, color.RGBA{sourceFileBytes[bPos], sourceFileBytes[bPos+1], sourceFileBytes[bPos+2], sourceFileBytes[bPos+3]})
-			bPos += 4
+			img.Set(x, y, color.RGBA{sourceFileBytes[bPos], sourceFileBytes[bPos+1], sourceFileBytes[bPos+2], 0xFF})
+			bPos += 3
 		}
 	}
 
@@ -116,9 +116,9 @@ func decryptFileAction(key, sourceImagePath, decryptedFilePath string) {
 	for y := 0; y <= img.Bounds().Max.Y; y++ {
 		for x := 0; x <= img.Bounds().Max.X; x++ {
 			c := img.At(x, y)
-			r, g, b, a := c.RGBA()
-			r, g, b, a = r>>8, g>>8, b>>8, a>>8 // convert from 32 bit to 8 bit
-			dat = append(dat, uint8(r), uint8(g), uint8(b), uint8(a))
+			r, g, b, _ := c.RGBA()
+			r, g, b = r>>8, g>>8, b>>8 // convert from 32 bit to 8 bit
+			dat = append(dat, uint8(r), uint8(g), uint8(b))
 
 		}
 	}
