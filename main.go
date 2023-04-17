@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"filehide/pkg/encryption"
 	"fmt"
 	"image"
 	"image/color"
@@ -15,25 +16,26 @@ var eofSignature []byte = []byte{0x05, 0xFF, 0x05, 0xFA, 0x55}
 func main() {
 	args := os.Args[1:]
 	action := args[0]
-	keyPhrase := args[1]
+	key := []byte (args[1])
 	inFile := args[2]
 	outFile := args[3]
 
 	if action == "encrypt" {
-		encryptFileAction(keyPhrase, inFile, outFile)
+		encryptFileAction(key, inFile, outFile)
 	} else if action == "decrypt" {
-		decryptFileAction(keyPhrase, inFile, outFile)
+		decryptFileAction(key, inFile, outFile)
 	}
 
 	fmt.Println("completed!")
 }
 
-func encryptFileAction(key, sourceFilePath, encryptedFilePath string) {
+func encryptFileAction(key []byte, sourceFilePath, encryptedFilePath string) {
 	sourceFileBytes, err := loadBinaryFileToMemory(sourceFilePath)
 	if err != nil {
 		panic(err)
 	}
 
+	sourceFileBytes = encryption.Encrypt(key, sourceFileBytes)
 
 	// add eof signature
 	sourceFileBytes = append(sourceFileBytes, eofSignature...)
@@ -100,7 +102,7 @@ func loadBinaryFileToMemory(filename string) ([]byte, error) {
 	return bytes, err
 }
 
-func decryptFileAction(key, sourceImagePath, decryptedFilePath string) {
+func decryptFileAction(key []byte, sourceImagePath, decryptedFilePath string) {
 	sourceImage, err := os.Open(sourceImagePath)
 	if err != nil {
 		panic(err)
@@ -130,13 +132,15 @@ func decryptFileAction(key, sourceImagePath, decryptedFilePath string) {
 		}
 	}
 
+	decryptedData := encryption.Decrypt(key, dat)
+
 	f, err := os.Create(decryptedFilePath)
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
 
-	if _, err := f.Write(dat); err != nil {
+	if _, err := f.Write(decryptedData); err != nil {
 		panic(err)
 	}
 }
