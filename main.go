@@ -57,8 +57,8 @@ func encryptFileAction(key, sourceFilePath, encryptedFilePath string) {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
 	bPos := 0
-	for y := 0; y <= height; y++ {
-		for x := 0; x <= width; x++ {
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
 			if bPos >= byteCount {
 				//img.Set(x, y, color.RGBA{0x00, 0x00,0x00, 0x00})
 				//continue
@@ -113,13 +113,12 @@ func decryptFileAction(key, sourceImagePath, decryptedFilePath string) {
 	}
 
 	var dat = []byte{}
-	for y := 0; y <= img.Bounds().Max.Y; y++ {
-		for x := 0; x <= img.Bounds().Max.X; x++ {
+	for y := 0; y < img.Bounds().Max.Y; y++ {
+		for x := 0; x < img.Bounds().Max.X; x++ {
 			c := img.At(x, y)
 			r, g, b, _ := c.RGBA()
 			r, g, b = r>>8, g>>8, b>>8 // convert from 32 bit to 8 bit
 			dat = append(dat, uint8(r), uint8(g), uint8(b))
-
 		}
 	}
 
