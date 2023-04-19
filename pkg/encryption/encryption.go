@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-func Encrypt(key, data []byte) []byte {
+func Encrypt(key, data []byte) ([]byte, []byte) {
 	// The key argument should be the AES key, either 16 or 32 bytes
 	// to select AES-128 or AES-256.
 	block, err := aes.NewCipher(key)
@@ -26,17 +26,12 @@ func Encrypt(key, data []byte) []byte {
 	}
 
 	encryptedPayload := aesgcm.Seal(nil, nonce, data, nil)
-	return encryptedPayload
+	return nonce, encryptedPayload
 }
 
-func Decrypt(key, encryptedData []byte) []byte {
+func Decrypt(key, nonce, encryptedData []byte) []byte {
 	// The key argument should be the AES key, either 16 or 32 bytes
 	// to select AES-128 or AES-256.
-	nonce := make([]byte, 12)
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		panic(err)
-	}
-
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		panic(err.Error())

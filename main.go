@@ -35,16 +35,17 @@ func encryptFileAction(key []byte, sourceFilePath, encryptedFilePath string) {
 		panic(err)
 	}
 
-	sourceFileBytes = encryption.Encrypt(key, sourceFileBytes)
+	nonce, payload := encryption.Encrypt(key, sourceFileBytes)
 
-	// add eof signature
-	sourceFileBytes = append(sourceFileBytes, eofSignature...)
+	// add nonce -> payload -> eof signature to new payload
+	payload = append(nonce, payload...)
+	payload = append(payload, eofSignature...)
 
 	// pad bytes so they're divisible by 3
-	for len(sourceFileBytes) % 3 != 0 {
-		sourceFileBytes = append(sourceFileBytes, 0x00)
+	for len(payload) % 3 != 0 {
+		payload = append(payload, 0x00)
 	}
-	byteCount := len(sourceFileBytes)
+	byteCount := len(payload)
 	pixelCount := byteCount / 3
 	pixelDimension := math.Sqrt(float64(pixelCount))
 
@@ -68,7 +69,7 @@ func encryptFileAction(key []byte, sourceFilePath, encryptedFilePath string) {
 			}
 
 			//fmt.Printf("Added pixel at %d, %d, bytePos at %d \\ %d \n", x, y, bPos, byteCount)
-			img.Set(x, y, color.RGBA{sourceFileBytes[bPos], sourceFileBytes[bPos+1], sourceFileBytes[bPos+2], 0xFF})
+			img.Set(x, y, color.RGBA{payload[bPos], payload[bPos+1], payload[bPos+2], 0xFF})
 			bPos += 3
 		}
 	}
@@ -132,7 +133,9 @@ func decryptFileAction(key []byte, sourceImagePath, decryptedFilePath string) {
 		}
 	}
 
-	decryptedData := encryption.Decrypt(key, dat)
+	nonce := dat[0:12]
+	dat = dat[12:] // remove nonce from decryption payload
+	decryptedData := encryption.Decrypt(key, nonce, dat)
 
 	f, err := os.Create(decryptedFilePath)
 	if err != nil {
