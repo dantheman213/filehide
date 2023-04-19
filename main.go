@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"filehide/pkg/compression"
 	"filehide/pkg/encryption"
 	"fmt"
 	"image"
@@ -35,7 +36,8 @@ func encryptFileAction(key []byte, sourceFilePath, encryptedFilePath string) {
 		panic(err)
 	}
 
-	nonce, payload := encryption.Encrypt(key, sourceFileBytes)
+	compressedFileBytes := compression.CompressBinary(sourceFileBytes)
+	nonce, payload := encryption.Encrypt(key, compressedFileBytes)
 
 	// add nonce -> payload -> eof signature to new payload
 	payload = append(nonce, payload...)
@@ -136,6 +138,7 @@ func decryptFileAction(key []byte, sourceImagePath, decryptedFilePath string) {
 	nonce := dat[0:12]
 	dat = dat[12:] // remove nonce from decryption payload
 	decryptedData := encryption.Decrypt(key, nonce, dat)
+	decompressedData := compression.DecompressBinary(decryptedData)
 
 	f, err := os.Create(decryptedFilePath)
 	if err != nil {
@@ -143,7 +146,7 @@ func decryptFileAction(key []byte, sourceImagePath, decryptedFilePath string) {
 	}
 	defer f.Close()
 
-	if _, err := f.Write(decryptedData); err != nil {
+	if _, err := f.Write(decompressedData); err != nil {
 		panic(err)
 	}
 }
