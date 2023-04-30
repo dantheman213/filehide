@@ -9,7 +9,9 @@ import (
 	"image/color"
 	"image/png"
 	"math"
+	"math/rand"
 	"os"
+	"time"
 )
 
 var eofSignature []byte = []byte{0x05, 0xFF, 0x05, 0xFA, 0x55}
@@ -17,11 +19,12 @@ var eofSignature []byte = []byte{0x05, 0xFF, 0x05, 0xFA, 0x55}
 func main() {
 	args := os.Args[1:]
 	action := args[0]
-	key := []byte (args[1])
+	key := []byte(args[1])
 	inFile := args[2]
 	outFile := args[3]
 
 	if action == "encrypt" {
+		rand.Seed(time.Now().UnixNano()) // init for random functions
 		encryptFileAction(key, inFile, outFile)
 	} else if action == "decrypt" {
 		decryptFileAction(key, inFile, outFile)
@@ -44,7 +47,7 @@ func encryptFileAction(key []byte, sourceFilePath, encryptedFilePath string) {
 	payload = append(payload, eofSignature...)
 
 	// pad bytes so they're divisible by 3
-	for len(payload) % 3 != 0 {
+	for len(payload)%3 != 0 {
 		payload = append(payload, 0x00)
 	}
 	byteCount := len(payload)
@@ -65,13 +68,18 @@ func encryptFileAction(key []byte, sourceFilePath, encryptedFilePath string) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			if bPos >= byteCount {
-				//img.Set(x, y, color.RGBA{0x00, 0x00,0x00, 0x00})
-				//continue
-				break
+				r := generateRandomNumber(0, 255)
+				g := generateRandomNumber(0, 255)
+				b := generateRandomNumber(0, 255)
+
+				img.Set(x, y, color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 0xFF})
+
+				//log.Printf("[%d,%d] R: %d G: %d B: %d", x, y, r, g, b)
+				continue
 			}
 
 			//fmt.Printf("Added pixel at %d, %d, bytePos at %d \\ %d \n", x, y, bPos, byteCount)
-			img.Set(x, y, color.RGBA{payload[bPos], payload[bPos+1], payload[bPos+2], 0xFF})
+			img.Set(x, y, color.RGBA{R: payload[bPos], G: payload[bPos+1], B: payload[bPos+2], A: 0xFF})
 			bPos += 3
 		}
 	}
@@ -161,4 +169,8 @@ func compareSlice(a, b []byte) bool {
 		}
 	}
 	return true
+}
+
+func generateRandomNumber(min, max int) int {
+	return rand.Intn(max-min+1) + min
 }
